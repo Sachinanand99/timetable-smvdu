@@ -1,0 +1,122 @@
+<div class="container mt-4">
+  <h2>Add Class</h2>
+  <form id="class-form" class="row g-3">
+    <div class="col-md-4">
+      <label for="semester" class="form-label">Semester</label>
+      <input type="text" class="form-control" id="semester" required>
+    </div>
+    <div class="col-md-4">
+      <label for="branch" class="form-label">Branch</label>
+      <input type="text" class="form-control" id="branch" required>
+    </div>
+    <div class="col-md-4">
+      <label for="section" class="form-label">Section</label>
+      <input type="text" class="form-control" id="section" required>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Add Class</button>
+    </div>
+  </form>
+
+  <hr class="my-4">
+
+  <h2>All Classes</h2>
+  <div class="mb-3">
+    <label for="semester-filter" class="form-label">Filter by Semester</label>
+    <select class="form-select" id="semester-filter" onchange="filterClassesBySemester()">
+      <option value="all">All Semesters</option>
+      <!-- Semester options will be added dynamically -->
+    </select>
+  </div>
+  <table class="table table-bordered table-striped" id="class-table">
+    <thead class="table-dark">
+      <tr>
+        <th>Semester</th>
+        <th>Branch</th>
+        <th>Section</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Class Details Modal -->
+  <div class="modal fade" id="classDetailsModal" tabindex="-1" aria-labelledby="classDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="classDetailsModalLabel">Class Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="nav nav-tabs" id="classTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjects-tab-pane" type="button" role="tab">Subjects</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="teachers-tab" data-bs-toggle="tab" data-bs-target="#teachers-tab-pane" type="button" role="tab">Teachers</button>
+            </li>
+          </ul>
+          <div class="tab-content mt-3" id="classTabsContent">
+            <div class="tab-pane fade show active" id="subjects-tab-pane" role="tabpanel" aria-labelledby="subjects-tab" tabindex="0">
+              <div class="mb-3">
+                <h6>Add Subject to Class</h6>
+                <div class="row g-3">
+                  <div class="col-md-8">
+                    <select class="form-select" id="subject-select">
+                      <option value="">Select Subject</option>
+                      <!-- Subject options will be added dynamically -->
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <button class="btn btn-primary" id="add-subject-btn">Add Subject</button>
+                  </div>
+                </div>
+              </div>
+              <table class="table table-bordered" id="class-subjects-table">
+                <thead class="table-secondary">
+                  <tr>
+                    <th>Course Code</th>
+                    <th>Name</th>
+                    <th>Credits</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="tab-pane fade" id="teachers-tab-pane" role="tabpanel" aria-labelledby="teachers-tab" tabindex="0">
+              <div class="mb-3">
+                <h6>Add Teacher to Class</h6>
+                <div class="row g-3">
+                  <div class="col-md-8">
+                    <select class="form-select" id="teacher-select">
+                      <option value="">Select Teacher</option>
+                      <!-- Teacher options will be added dynamically -->
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <button class="btn btn-primary" id="add-teacher-btn">Add Teacher</button>
+                  </div>
+                </div>
+              </div>
+              <table class="table table-bordered" id="class-teachers-table">
+                <thead class="table-secondary">
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

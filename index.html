@@ -1,11 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Page</title>
-</head>
-<body>
-    Hello electron! This is a test page.
-</body>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>University Course Management</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
+      <a class="navbar-brand" href="#">Course Manager</a>
+      <div class="navbar-nav">
+        <button
+          class="btn btn-outline-light me-2"
+          onclick="loadFrame('teacher')"
+        >
+          Teachers
+        </button>
+        <button
+          class="btn btn-outline-light me-2"
+          onclick="loadFrame('subject')"
+        >
+          Subjects
+        </button>
+        <button
+          class="btn btn-outline-light me-2"
+          onclick="loadFrame('classroom')"
+        >
+          Classrooms
+        </button>
+        <button class="btn btn-outline-light me-2" onclick="loadFrame('class')">
+          Classes
+        </button>
+        <button
+          class="btn btn-outline-light me-2"
+          onclick="loadFrame('teaching-assignment')"
+        >
+          Assignments
+        </button>
+        <button
+          class="btn btn-outline-light me-2"
+          onclick="loadFrame('timetable')"
+        >
+          Timetables
+        </button>
+      </div>
+    </nav>
+
+    <div class="container-fluid mt-4" id="frame-container">
+      <h3 class="text-muted">Select a module to begin</h3>
+      <button id="load-teachers-btn" class="btn btn-secondary">
+  Load Teachers
+</button>
+
+    </div>
+  <script src="renderer/index.js"></script>
+  <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  </div>
+  </body>
 </html>

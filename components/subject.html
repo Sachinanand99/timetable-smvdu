@@ -1,0 +1,59 @@
+<div class="container mt-4">
+  <h2>Add Subject</h2>
+  <form id="subject-form" class="row g-3">
+    <div class="col-md-4">
+      <label for="course-code" class="form-label">Course Code</label>
+      <input type="text" class="form-control" id="course-code" required>
+    </div>
+    <div class="col-md-8">
+      <label for="subject-name" class="form-label">Subject Name</label>
+      <input type="text" class="form-control" id="subject-name" required>
+    </div>
+    <div class="col-md-2">
+      <label for="lecture-hr" class="form-label">Lecture Hours</label>
+      <input type="number" class="form-control" id="lecture-hr" min="0" value="0">
+    </div>
+    <div class="col-md-2">
+      <label for="theory-hr" class="form-label">Theory Hours</label>
+      <input type="number" class="form-control" id="theory-hr" min="0" value="0">
+    </div>
+    <div class="col-md-2">
+      <label for="practical-hr" class="form-label">Practical Hours</label>
+      <input type="number" class="form-control" id="practical-hr" min="0" value="0">
+    </div>
+    <div class="col-md-2">
+      <label for="credits" class="form-label">Credits</label>
+      <input type="number" class="form-control" id="credits" min="0" value="0">
+    </div>
+    <div class="col-md-2">
+      <label for="display-code" class="form-label">Display Code</label>
+      <input type="text" class="form-control" id="display-code">
+    </div>
+    <div class="col-md-2">
+      <label for="course-coordinator" class="form-label">Course Coordinator</label>
+      <input type="text" class="form-control" id="course-coordinator">
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Add Subject</button>
+    </div>
+  </form>
+
+  <hr class="my-4">
+
+  <h2>All Subjects</h2>
+  <table class="table table-bordered table-striped" id="subject-table">
+    <thead class="table-dark">
+      <tr>
+        <th>Course Code</th>
+        <th>Name</th>
+        <th>Lecture Hrs</th>
+        <th>Theory Hrs</th>
+        <th>Practical Hrs</th>
+        <th>Credits</th>
+        <th>Display Code</th>
+        <th>Coordinator</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>

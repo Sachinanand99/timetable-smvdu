@@ -1,5 +1,4 @@
 .prettierrc
 .editorconfig
-
+*.db
 node_modules
-

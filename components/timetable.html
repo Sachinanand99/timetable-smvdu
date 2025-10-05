@@ -1,0 +1,113 @@
+<div class="container-fluid mt-4">
+  <h2>Timetable Generator</h2>
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          Generate Timetable
+        </div>
+        <div class="card-body">
+          <form id="generate-form" class="row g-3">
+            <div class="col-md-4">
+              <label for="semester-select" class="form-label">Semester</label>
+              <select class="form-select" id="semester-select" required>
+                <option value="">Select Semester</option>
+                <!-- Semester options will be added dynamically -->
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="branch-select" class="form-label">Branch</label>
+              <select class="form-select" id="branch-select" required>
+                <option value="">Select Branch</option>
+                <!-- Branch options will be added dynamically -->
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="section-select" class="form-label">Section</label>
+              <select class="form-select" id="section-select" required>
+                <option value="">Select Section</option>
+                <!-- Section options will be added dynamically -->
+              </select>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary">Generate Timetable</button>
+              <button type="button" class="btn btn-danger" id="clear-timetable-btn">Clear Timetable</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          View Timetable
+        </div>
+        <div class="card-body">
+          <form id="view-form" class="row g-3">
+            <div class="col-md-4">
+              <label for="view-type" class="form-label">View By</label>
+              <select class="form-select" id="view-type" required>
+                <option value="class">Class</option>
+                <option value="teacher">Teacher</option>
+                <option value="classroom">Classroom</option>
+              </select>
+            </div>
+            <div class="col-md-8" id="view-class-container">
+              <label for="view-class" class="form-label">Class</label>
+              <select class="form-select" id="view-class" required>
+                <option value="">Select Class</option>
+                <!-- Class options will be added dynamically -->
+              </select>
+            </div>
+            <div class="col-md-8" id="view-teacher-container" style="display: none;">
+              <label for="view-teacher" class="form-label">Teacher</label>
+              <select class="form-select" id="view-teacher">
+                <option value="">Select Teacher</option>
+                <!-- Teacher options will be added dynamically -->
+              </select>
+            </div>
+            <div class="col-md-8" id="view-classroom-container" style="display: none;">
+              <label for="view-classroom" class="form-label">Classroom</label>
+              <select class="form-select" id="view-classroom">
+                <option value="">Select Classroom</option>
+                <!-- Classroom options will be added dynamically -->
+              </select>
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-info">View Timetable</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="timetable-container" class="mt-4" style="display: none;">
+    <h3 id="timetable-title">Timetable</h3>
+    <div class="table-responsive">
+      <table class="table table-bordered" id="timetable">
+        <thead class="table-dark">
+          <tr>
+            <th>Period / Day</th>
+            <th>Monday</th>
+            <th>Tuesday</th>
+            <th>Wednesday</th>
+            <th>Thursday</th>
+            <th>Friday</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Timetable rows will be added dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="loading-spinner" class="text-center mt-4" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">Generating timetable... This may take a moment.</p>
+  </div>
+</div>
+

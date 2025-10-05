@@ -1,23 +1,33 @@
-const { app, BrowserWindow } = require('electron');
-
-const url = require('url');
+const { app, BrowserWindow } = require('electron/main');
 const path = require('path');
 
-function createMainWindow() { 
-    const mainWindow = new BrowserWindow({
-        title: "SMVDU Smart Timetable Generator",
+// Load modules
+require('./db/schema');
+require('./ipc/teacher');
+require('./ipc/subject');
+require('./ipc/classroom');
+require('./ipc/class');
+require('./ipc/teaching-assignment');
+require('./ipc/timetable');
 
-        width: 1000,
-        height: 600,
-    });
-
-    const startUrl = url.format({
-        pathname: path.join(__dirname, 'index.html'),
-        protocol: 'file',
-
-    })
-    mainWindow.loadURL(startUrl);
-
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+  win.loadFile('index.html');
+  win.webContents.openDevTools();
 }
 
-app.whenReady().then(createMainWindow);
+app.whenReady().then(createWindow);
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});

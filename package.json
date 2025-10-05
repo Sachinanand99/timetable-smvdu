@@ -8,11 +8,18 @@
     "start": "electron .",
     "dev:watch": "npx electronmon --trace-warnings ."
   },
+  "electronmon": {
+    "patterns": ["!*.db"]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
     "electron": "^38.2.0"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.2",
+    "sqlite3": "^5.1.7"
   }
 }

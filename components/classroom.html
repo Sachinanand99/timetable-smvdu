@@ -1,0 +1,46 @@
+<div class="container mt-4">
+  <h2>Add Classroom</h2>
+  <form id="classroom-form" class="row g-3">
+    <div class="col-md-4">
+      <label for="room-id" class="form-label">Room ID</label>
+      <input type="text" class="form-control" id="room-id" required>
+    </div>
+    <div class="col-md-4">
+      <label for="capacity" class="form-label">Capacity</label>
+      <input type="number" class="form-control" id="capacity" min="1" required>
+    </div>
+    <div class="col-md-4">
+      <label for="room-type" class="form-label">Room Type</label>
+      <select class="form-select" id="room-type" required>
+        <option value="">Select Type</option>
+        <option value="lecture">Lecture Room</option>
+        <option value="lab">Laboratory</option>
+      </select>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Add Classroom</button>
+    </div>
+  </form>
+
+  <hr class="my-4">
+
+  <h2>All Classrooms</h2>
+  <div class="mb-3">
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-outline-primary" onclick="filterClassrooms('all')">All</button>
+      <button type="button" class="btn btn-outline-primary" onclick="filterClassrooms('lecture')">Lecture Rooms</button>
+      <button type="button" class="btn btn-outline-primary" onclick="filterClassrooms('lab')">Laboratories</button>
+    </div>
+  </div>
+  <table class="table table-bordered table-striped" id="classroom-table">
+    <thead class="table-dark">
+      <tr>
+        <th>Room ID</th>
+        <th>Capacity</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
