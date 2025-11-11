@@ -5,10 +5,10 @@ const { classQueries, classSubjectsQueries, classTeachersQueries } = require('..
 ipcMain.on('add-class', async (event, classData) => {
   try {
     // Validate input
-    if (!classData.semester || !classData.branch || !classData.section) {
+    if (!classData.semester || !classData.branch || !classData.section || !classData.strength) {
       event.reply('add-class-response', {
         success: false,
-        message: 'Semester, Branch, and Section are required'
+        message: 'Semester, Branch, Section and Strength are required'
       });
       return;
     }
@@ -17,7 +17,8 @@ ipcMain.on('add-class', async (event, classData) => {
     const existingClass = await classQueries.getClass(
       classData.semester,
       classData.branch,
-      classData.section
+      classData.section,
+      classData.strength
     );
     
     if (existingClass) {
@@ -78,9 +79,9 @@ ipcMain.on('get-classes-by-semester', async (event, semester) => {
 });
 
 // Handle get-class request
-ipcMain.on('get-class', async (event, { semester, branch, section }) => {
+ipcMain.on('get-class', async (event, { semester, branch, section, strength }) => {
   try {
-    const classData = await classQueries.getClass(semester, branch, section);
+    const classData = await classQueries.getClass(semester, branch, section, strength);
     if (classData) {
       event.reply('get-class-response', {
         success: true,

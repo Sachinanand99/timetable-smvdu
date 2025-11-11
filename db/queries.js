@@ -1,6 +1,5 @@
 const db = require('./schema');
 
-// Helper function to run a query with parameters
 function runQuery(query, params = []) {
   return new Promise((resolve, reject) => {
     db.run(query, params, function(err) {
@@ -13,7 +12,6 @@ function runQuery(query, params = []) {
   });
 }
 
-// Helper function to get all rows from a query
 function getAllRows(query, params = []) {
   return new Promise((resolve, reject) => {
     db.all(query, params, (err, rows) => {
@@ -26,7 +24,6 @@ function getAllRows(query, params = []) {
   });
 }
 
-// Helper function to get a single row from a query
 function getRow(query, params = []) {
   return new Promise((resolve, reject) => {
     db.get(query, params, (err, row) => {
@@ -39,9 +36,7 @@ function getRow(query, params = []) {
   });
 }
 
-// Teacher queries
 const teacherQueries = {
-  // Add a new teacher
   addTeacher: (teacher) => {
     return runQuery(
       'INSERT INTO Teacher (id, full_name) VALUES (?, ?)',
@@ -49,17 +44,14 @@ const teacherQueries = {
     );
   },
   
-  // Get all teachers
   getAllTeachers: () => {
-    return getAllRows('SELECT * FROM Teacher ORDER BY full_name');
+    return getAllRows("SELECT * FROM Teacher ORDER BY printf('%05s', id)");
   },
   
-  // Get a teacher by ID
   getTeacherById: (id) => {
     return getRow('SELECT * FROM Teacher WHERE id = ?', [id]);
   },
   
-  // Update a teacher
   updateTeacher: (teacher) => {
     return runQuery(
       'UPDATE Teacher SET full_name = ? WHERE id = ?',
@@ -67,15 +59,12 @@ const teacherQueries = {
     );
   },
   
-  // Delete a teacher
   deleteTeacher: (id) => {
     return runQuery('DELETE FROM Teacher WHERE id = ?', [id]);
   }
 };
 
-// Subject queries
 const subjectQueries = {
-  // Add a new subject
   addSubject: (subject) => {
     return runQuery(
       'INSERT INTO Subject (course_code, name, lecture_hr, theory_hr, practical_hr, credits, course_coordinator, display_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -92,17 +81,14 @@ const subjectQueries = {
     );
   },
   
-  // Get all subjects
   getAllSubjects: () => {
     return getAllRows('SELECT * FROM Subject ORDER BY name');
   },
   
-  // Get a subject by course code
   getSubjectByCode: (code) => {
     return getRow('SELECT * FROM Subject WHERE course_code = ?', [code]);
   },
   
-  // Update a subject
   updateSubject: (subject) => {
     return runQuery(
       'UPDATE Subject SET name = ?, lecture_hr = ?, theory_hr = ?, practical_hr = ?, credits = ?, course_coordinator = ?, display_code = ? WHERE course_code = ?',
@@ -119,15 +105,12 @@ const subjectQueries = {
     );
   },
   
-  // Delete a subject
   deleteSubject: (code) => {
     return runQuery('DELETE FROM Subject WHERE course_code = ?', [code]);
   }
 };
 
-// Classroom queries
 const classroomQueries = {
-  // Add a new classroom
   addClassroom: (classroom) => {
     return runQuery(
       'INSERT INTO Classroom (room_id, capacity, type) VALUES (?, ?, ?)',
@@ -135,22 +118,18 @@ const classroomQueries = {
     );
   },
   
-  // Get all classrooms
   getAllClassrooms: () => {
     return getAllRows('SELECT * FROM Classroom ORDER BY room_id');
   },
   
-  // Get classrooms by type
   getClassroomsByType: (type) => {
     return getAllRows('SELECT * FROM Classroom WHERE type = ? ORDER BY room_id', [type]);
   },
   
-  // Get a classroom by ID
   getClassroomById: (id) => {
     return getRow('SELECT * FROM Classroom WHERE room_id = ?', [id]);
   },
   
-  // Update a classroom
   updateClassroom: (classroom) => {
     return runQuery(
       'UPDATE Classroom SET capacity = ?, type = ? WHERE room_id = ?',
@@ -158,67 +137,59 @@ const classroomQueries = {
     );
   },
   
-  // Delete a classroom
   deleteClassroom: (id) => {
     return runQuery('DELETE FROM Classroom WHERE room_id = ?', [id]);
   }
 };
 
-// Class queries
 const classQueries = {
-  // Add a new class
   addClass: (classData) => {
     return runQuery(
-      'INSERT INTO Class (semester, branch, section) VALUES (?, ?, ?)',
-      [classData.semester, classData.branch, classData.section]
+      'INSERT INTO Class (semester, branch, section) VALUES (?, ?, ?, ?)',
+      [classData.semester, classData.branch, classData.section, classData.strength]
     );
   },
   
-  // Get all classes
   getAllClasses: () => {
-    return getAllRows('SELECT * FROM Class ORDER BY semester, branch, section');
+    return getAllRows('SELECT * FROM Class ORDER BY semester, branch, section, strength');
   },
   
-  // Get classes by semester
   getClassesBySemester: (semester) => {
-    return getAllRows('SELECT * FROM Class WHERE semester = ? ORDER BY branch, section', [semester]);
+    return getAllRows('SELECT * FROM Class WHERE semester = ? ORDER BY branch, section, strength', [semester]);
   },
   
-  // Get a specific class
-  getClass: (semester, branch, section) => {
+  getClass: (semester, branch, section, strength) => {
     return getRow(
-      'SELECT * FROM Class WHERE semester = ? AND branch = ? AND section = ?',
-      [semester, branch, section]
+      'SELECT * FROM Class WHERE semester = ? AND branch = ? AND section = ? AND strength = ?',
+      [semester, branch, section, strength]
     );
   },
   
-  // Update a class
   updateClass: (oldData, newData) => {
     return runQuery(
-      'UPDATE Class SET semester = ?, branch = ?, section = ? WHERE semester = ? AND branch = ? AND section = ?',
+      'UPDATE Class SET semester = ?, branch = ?, section = ?, strength = ? WHERE semester = ? AND branch = ? AND section = ?, strength = ?',
       [
         newData.semester,
         newData.branch,
         newData.section,
+        newData.strength,
         oldData.semester,
         oldData.branch,
-        oldData.section
+        oldData.section,
+        oldData.strength
       ]
     );
   },
   
-  // Delete a class
-  deleteClass: (semester, branch, section) => {
+  deleteClass: (semester, branch, section, strength) => {
     return runQuery(
-      'DELETE FROM Class WHERE semester = ? AND branch = ? AND section = ?',
-      [semester, branch, section]
+      'DELETE FROM Class WHERE semester = ? AND branch = ? AND section = ? AND strength = ?',
+      [semester, branch, section, strength]
     );
   }
 };
 
-// Teaching Assignment queries
 const teachingAssignmentQueries = {
-  // Add a new teaching assignment
   addTeachingAssignment: (assignment) => {
     return runQuery(
       'INSERT INTO Teaching_Assignment (teacher_id, course_code, semester, branch, section) VALUES (?, ?, ?, ?, ?)',
@@ -232,7 +203,6 @@ const teachingAssignmentQueries = {
     );
   },
   
-  // Get all teaching assignments
   getAllTeachingAssignments: () => {
     return getAllRows(`
       SELECT ta.*, t.full_name as teacher_name, s.name as subject_name
@@ -243,7 +213,6 @@ const teachingAssignmentQueries = {
     `);
   },
   
-  // Get teaching assignments by teacher
   getTeachingAssignmentsByTeacher: (teacherId) => {
     return getAllRows(`
       SELECT ta.*, t.full_name as teacher_name, s.name as subject_name
@@ -255,7 +224,6 @@ const teachingAssignmentQueries = {
     `, [teacherId]);
   },
   
-  // Get teaching assignments by class
   getTeachingAssignmentsByClass: (semester, branch, section) => {
     return getAllRows(`
       SELECT ta.*, t.full_name as teacher_name, s.name as subject_name
@@ -267,7 +235,6 @@ const teachingAssignmentQueries = {
     `, [semester, branch, section]);
   },
   
-  // Delete a teaching assignment
   deleteTeachingAssignment: (teacher_id, course_code, semester, branch, section) => {
     return runQuery(
       'DELETE FROM Teaching_Assignment WHERE teacher_id = ? AND course_code = ? AND semester = ? AND branch = ? AND section = ?',
@@ -276,9 +243,7 @@ const teachingAssignmentQueries = {
   }
 };
 
-// Class Subjects queries
 const classSubjectsQueries = {
-  // Add a subject to a class
   addClassSubject: (data) => {
     return runQuery(
       'INSERT INTO Class_Subjects (semester, branch, section, course_code) VALUES (?, ?, ?, ?)',
@@ -286,7 +251,6 @@ const classSubjectsQueries = {
     );
   },
   
-  // Get all subjects for a class
   getClassSubjects: (semester, branch, section) => {
     return getAllRows(`
       SELECT cs.*, s.name, s.lecture_hr, s.theory_hr, s.practical_hr, s.credits, s.display_code
@@ -297,7 +261,6 @@ const classSubjectsQueries = {
     `, [semester, branch, section]);
   },
   
-  // Remove a subject from a class
   removeClassSubject: (semester, branch, section, course_code) => {
     return runQuery(
       'DELETE FROM Class_Subjects WHERE semester = ? AND branch = ? AND section = ? AND course_code = ?',
@@ -306,9 +269,7 @@ const classSubjectsQueries = {
   }
 };
 
-// Class Teachers queries
 const classTeachersQueries = {
-  // Add a teacher to a class
   addClassTeacher: (data) => {
     return runQuery(
       'INSERT INTO Class_Teachers (semester, branch, section, teacher_id) VALUES (?, ?, ?, ?)',
@@ -316,7 +277,6 @@ const classTeachersQueries = {
     );
   },
   
-  // Get all teachers for a class
   getClassTeachers: (semester, branch, section) => {
     return getAllRows(`
       SELECT ct.*, t.full_name
@@ -327,7 +287,6 @@ const classTeachersQueries = {
     `, [semester, branch, section]);
   },
   
-  // Remove a teacher from a class
   removeClassTeacher: (semester, branch, section, teacher_id) => {
     return runQuery(
       'DELETE FROM Class_Teachers WHERE semester = ? AND branch = ? AND section = ? AND teacher_id = ?',
@@ -336,9 +295,7 @@ const classTeachersQueries = {
   }
 };
 
-// Timetable queries
 const timetableQueries = {
-  // Save a timetable entry
   saveTimetableEntry: (entry) => {
     return runQuery(
       'INSERT INTO Timetable (semester, branch, section, day, period, course_code, teacher_id, room_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -355,7 +312,6 @@ const timetableQueries = {
     );
   },
   
-  // Get timetable for a class
   getClassTimetable: (semester, branch, section) => {
     return getAllRows(`
       SELECT t.*, s.name as subject_name, s.display_code, 
@@ -369,7 +325,6 @@ const timetableQueries = {
     `, [semester, branch, section]);
   },
   
-  // Get timetable for a teacher
   getTeacherTimetable: (teacherId) => {
     return getAllRows(`
       SELECT t.*, s.name as subject_name, s.display_code, 
@@ -382,7 +337,6 @@ const timetableQueries = {
     `, [teacherId]);
   },
   
-  // Get timetable for a classroom
   getClassroomTimetable: (roomId) => {
     return getAllRows(`
       SELECT t.*, s.name as subject_name, s.display_code, 
@@ -395,7 +349,6 @@ const timetableQueries = {
     `, [roomId]);
   },
   
-  // Clear timetable for a class
   clearClassTimetable: (semester, branch, section) => {
     return runQuery(
       'DELETE FROM Timetable WHERE semester = ? AND branch = ? AND section = ?',
@@ -403,7 +356,6 @@ const timetableQueries = {
     );
   },
   
-  // Clear all timetables
   clearAllTimetables: () => {
     return runQuery('DELETE FROM Timetable');
   }

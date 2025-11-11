@@ -1,7 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// Create a new database or open existing one
 const dbPath = path.join(__dirname, '..', 'university.db');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
@@ -9,7 +8,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
   } else {
     console.log('Connected to the university database.');
 
-    // Enable foreign key constraints
     db.run('PRAGMA foreign_keys = ON', (err) => {
       if (err) {
         console.error('Error enabling foreign keys:', err.message);
@@ -21,9 +19,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
   }
 });
 
-// Create all required tables if they don't exist
 function createTables() {
-  // Teacher table
   db.run(
     `
     CREATE TABLE IF NOT EXISTS Teacher (
@@ -40,7 +36,6 @@ function createTables() {
     }
   );
 
-  // Subject table
   db.run(
     `
     CREATE TABLE IF NOT EXISTS Subject (
@@ -63,7 +58,6 @@ function createTables() {
     }
   );
 
-  // Classroom table
   db.run(
     `
     CREATE TABLE IF NOT EXISTS Classroom (
@@ -88,6 +82,7 @@ function createTables() {
       semester TEXT,
       branch TEXT,
       section TEXT,
+      strength INTEGER,
       PRIMARY KEY(semester, branch, section)
     )
   `,

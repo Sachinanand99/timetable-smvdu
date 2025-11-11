@@ -32,7 +32,7 @@ export function attachLogic(ipcRenderer) {
       form.reset();
       loadAssignments();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 
@@ -112,7 +112,7 @@ export function attachLogic(ipcRenderer) {
     if (res.success) {
       loadAssignments();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 

@@ -15,14 +15,14 @@ export function attachLogic(ipcRenderer) {
   ipcRenderer.removeAllListeners('get-teachers-response');
   ipcRenderer.on('add-teacher-response', (event, res) => {
     if (res.success) {
-      showToast('✅ Teacher added');
+      showToast('Teacher added');
       form.reset();
       loadTeachers();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
- 
+
   function loadTeachers() {
     ipcRenderer.send('get-teachers');
   }
@@ -39,7 +39,6 @@ export function attachLogic(ipcRenderer) {
       tableBody.appendChild(fragment);
     });
   });
-
 
   loadTeachers();
 }

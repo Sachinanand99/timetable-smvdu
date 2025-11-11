@@ -13,7 +13,7 @@ class GeneticAlgorithm {
     this.classrooms = classrooms;
     this.subjects = subjects;
     this.days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    this.periods = [1, 2, 3, 4, 5, 6, 7, 8]; // 8 periods per day
+    this.periods = [1, 2, 3, 4, 5, 6, 7]; // 7 periods per day
     this.populationSize = 50;
     this.maxGenerations = 100;
     this.mutationRate = 0.1;

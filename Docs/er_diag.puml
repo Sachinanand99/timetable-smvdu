@@ -1,0 +1,104 @@
+@startuml
+!theme plain
+hide circle
+hide methods
+hide stereotypes
+
+' ==============================
+' ENTITIES (TABLE DEFINITIONS)
+' ==============================
+
+entity Teacher {
+  *id : TEXT <<PK>>
+  full_name : TEXT NOT NULL
+}
+
+entity Subject {
+  *course_code : TEXT <<PK>>
+  name : TEXT
+  lecture_hr : INTEGER
+  theory_hr : INTEGER
+  practical_hr : INTEGER
+  credits : INTEGER
+  course_coordinator : TEXT
+  display_code : TEXT
+}
+
+entity Classroom {
+  *room_id : TEXT <<PK>>
+  capacity : INTEGER
+  type : TEXT CHECK(type IN ('lab', 'lecture'))
+}
+
+entity Class {
+  *semester : TEXT <<PK>>
+  *branch : TEXT <<PK>>
+  *section : TEXT <<PK>>
+  strength : INTEGER
+}
+
+entity Teaching_Assignment {
+  *teacher_id : TEXT <<FK>>  -- REFERENCES Teacher(id)
+  *course_code : TEXT <<FK>>  -- REFERENCES Subject(course_code)
+  *semester : TEXT <<FK>>
+  *branch : TEXT <<FK>>
+  *section : TEXT <<FK>>
+}
+
+entity Class_Subjects {
+  *semester : TEXT <<FK>>
+  *branch : TEXT <<FK>>
+  *section : TEXT <<FK>>
+  *course_code : TEXT <<FK>>  -- REFERENCES Subject(course_code)
+}
+
+entity Class_Teachers {
+  *semester : TEXT <<FK>>
+  *branch : TEXT <<FK>>
+  *section : TEXT <<FK>>
+  *teacher_id : TEXT <<FK>>  -- REFERENCES Teacher(id)
+}
+
+entity Timetable {
+  *id : INTEGER <<PK, AUTOINCREMENT>>
+  semester : TEXT <<FK>>
+  branch : TEXT <<FK>>
+  section : TEXT <<FK>>
+  day : TEXT
+  period : INTEGER
+  course_code : TEXT <<FK>>  -- REFERENCES Subject(course_code)
+  teacher_id : TEXT <<FK>>  -- REFERENCES Teacher(id)
+  room_id : TEXT <<FK>>  -- REFERENCES Classroom(room_id)
+}
+
+' ==============================
+' RELATIONSHIPS (FOREIGN KEYS)
+' ==============================
+
+' Teaching_Assignment relationships
+Teaching_Assignment::$teacher_id --> Teacher::$id
+Teaching_Assignment::$course_code --> Subject::$course_code
+Teaching_Assignment::$semester --> Class::$semester
+Teaching_Assignment::$branch --> Class::$branch
+Teaching_Assignment::$section --> Class::$section
+
+' Class_Subjects relationships
+Class_Subjects::$semester --> Class::$semester
+Class_Subjects::$branch --> Class::$branch
+Class_Subjects::$section --> Class::$section
+Class_Subjects::$course_code --> Subject::$course_code
+
+' Class_Teachers relationships
+Class_Teachers::$semester --> Class::$semester
+Class_Teachers::$branch --> Class::$branch
+Class_Teachers::$section --> Class::$section
+Class_Teachers::$teacher_id --> Teacher::$id
+
+' Timetable relationships
+Timetable::$semester --> Class::$semester
+Timetable::$branch --> Class::$branch
+Timetable::$section --> Class::$section
+Timetable::$course_code --> Subject::$course_code
+Timetable::$teacher_id --> Teacher::$id
+Timetable::$room_id --> Classroom::$room_id
+@enduml

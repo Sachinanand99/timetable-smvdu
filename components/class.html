@@ -13,6 +13,10 @@
       <label for="section" class="form-label">Section</label>
       <input type="text" class="form-control" id="section" required>
     </div>
+    <div class="col-md-4">
+      <label for="strength" class="form-label">Strength</label>
+      <input type="text" class="form-control" id="strength" required>
+    </div>
     <div class="col-12">
       <button type="submit" class="btn btn-primary">Add Class</button>
     </div>
@@ -25,7 +29,6 @@
     <label for="semester-filter" class="form-label">Filter by Semester</label>
     <select class="form-select" id="semester-filter" onchange="filterClassesBySemester()">
       <option value="all">All Semesters</option>
-      <!-- Semester options will be added dynamically -->
     </select>
   </div>
   <table class="table table-bordered table-striped" id="class-table">
@@ -34,13 +37,13 @@
         <th>Semester</th>
         <th>Branch</th>
         <th>Section</th>
+        <th>Strength</th>
         <th>Actions</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <!-- Class Details Modal -->
   <div class="modal fade" id="classDetailsModal" tabindex="-1" aria-labelledby="classDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -65,7 +68,6 @@
                   <div class="col-md-8">
                     <select class="form-select" id="subject-select">
                       <option value="">Select Subject</option>
-                      <!-- Subject options will be added dynamically -->
                     </select>
                   </div>
                   <div class="col-md-4">
@@ -92,7 +94,6 @@
                   <div class="col-md-8">
                     <select class="form-select" id="teacher-select">
                       <option value="">Select Teacher</option>
-                      <!-- Teacher options will be added dynamically -->
                     </select>
                   </div>
                   <div class="col-md-4">

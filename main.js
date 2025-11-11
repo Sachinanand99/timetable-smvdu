@@ -1,7 +1,6 @@
 const { app, BrowserWindow } = require('electron/main');
 const path = require('path');
 
-// Load modules
 require('./db/schema');
 require('./ipc/teacher');
 require('./ipc/subject');

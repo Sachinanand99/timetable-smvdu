@@ -26,7 +26,7 @@ export function attachLogic(ipcRenderer) {
       form.reset();
       loadSubjects();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 

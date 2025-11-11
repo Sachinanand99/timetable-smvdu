@@ -20,7 +20,7 @@ export function attachLogic(ipcRenderer) {
       form.reset();
       loadClassrooms();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 

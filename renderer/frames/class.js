@@ -17,17 +17,18 @@ export function attachLogic(ipcRenderer, bootstrap) {
       semester: document.getElementById('semester').value.trim(),
       branch: document.getElementById('branch').value.trim(),
       section: document.getElementById('section').value.trim(),
+      strength: document.getElementById('strength').value.trim(),
     };
     ipcRenderer.send('add-class', classData);
   });
 
   ipcRenderer.on('add-class-response', (event, res) => {
     if (res.success) {
-      showToast('✅ Teacher added successfully', 'success');
+      showToast('Teacher added successfully', 'success');
       form.reset();
       loadClasses();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 
@@ -68,6 +69,7 @@ export function attachLogic(ipcRenderer, bootstrap) {
           <td>${c.semester}</td>
           <td>${c.branch}</td>
           <td>${c.section}</td>
+          <td>${c.strength}</td>
           <td>
             <button class="btn btn-sm btn-info" onclick="showClassDetails('${c.semester}', '${c.branch}', '${c.section}')">
               Details
@@ -78,10 +80,10 @@ export function attachLogic(ipcRenderer, bootstrap) {
   }
 
   window.showClassDetails = function (semester, branch, section) {
-    currentClass = { semester, branch, section };
+    currentClass = { semester, branch, section, strength };
     document.getElementById(
       'classDetailsModalLabel'
-    ).textContent = `Class Details: ${semester} - ${branch} - ${section}`;
+    ).textContent = `Class Details: ${semester} - ${branch} - ${section} - ${strength}`;
     loadClassSubjects();
     loadClassTeachers();
     loadAllSubjects();
@@ -220,22 +222,22 @@ export function attachLogic(ipcRenderer, bootstrap) {
 
   ipcRenderer.on('add-class-subject-response', (event, res) => {
     if (res.success) loadClassSubjects();
-    else showToast('❌ Error: ' + res.message, 'danger');
+    else showToast('Error: ' + res.message, 'danger');
   });
 
   ipcRenderer.on('add-class-teacher-response', (event, res) => {
     if (res.success) loadClassTeachers();
-    else showToast('❌ Error: ' + res.message, 'danger');
+    else showToast('Error: ' + res.message, 'danger');
   });
 
   ipcRenderer.on('remove-class-subject-response', (event, res) => {
     if (res.success) loadClassSubjects();
-    else showToast('❌ Error: ' + res.message, 'danger');
+    else showToast('Error: ' + res.message, 'danger');
   });
 
   ipcRenderer.on('remove-class-teacher-response', (event, res) => {
     if (res.success) loadClassTeachers();
-    else showToast('❌ Error: ' + res.message, 'danger');
+    else showToast('Error: ' + res.message, 'danger');
   });
 
   loadClasses(); // Initial load

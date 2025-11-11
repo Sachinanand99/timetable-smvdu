@@ -4,7 +4,7 @@ export function attachLogic(ipcRenderer) {
   let allClassrooms = [];
   let currentTimetable = [];
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const periods = [1, 2, 3, 4, 5, 6, 7, 8];
+  const periods = [1, 2, 3, 4, 5, 6, 7];
 
   // DOM references
   const semesterSelect = document.getElementById('semester-select');
@@ -164,7 +164,7 @@ export function attachLogic(ipcRenderer) {
         section: sectionSelect.value,
       });
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 
@@ -177,7 +177,7 @@ export function attachLogic(ipcRenderer) {
         : 'Timetable (No entries found)';
       renderTimetable();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 
@@ -191,7 +191,7 @@ export function attachLogic(ipcRenderer) {
         : 'Teacher Timetable';
       renderTimetable();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 
@@ -208,7 +208,7 @@ export function attachLogic(ipcRenderer) {
       timetableTitle.textContent = `Timetable for Classroom: ${label}`;
       renderTimetable();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 
@@ -219,7 +219,7 @@ export function attachLogic(ipcRenderer) {
       timetableTitle.textContent = 'Timetable (Cleared)';
       renderTimetable();
     } else {
-      showToast('❌ Error: ' + res.message, 'danger');
+      showToast('Error: ' + res.message, 'danger');
     }
   });
 
