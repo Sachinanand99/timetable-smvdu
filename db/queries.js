@@ -194,7 +194,7 @@ const classroomQueries = {
 const classQueries = {
   addClass: (classData) => {
     return runQuery(
-      'INSERT INTO Class (semester, branch, section) VALUES (?, ?, ?, ?)',
+      'INSERT INTO Class (semester, branch, section, strength) VALUES (?, ?, ?, ?)',
       [
         classData.semester,
         classData.branch,
