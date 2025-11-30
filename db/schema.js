@@ -38,6 +38,28 @@ function createTables() {
 
   db.run(
     `
+    CREATE TABLE IF NOT EXISTS Teacher_Unavailability (
+      teacher_id TEXT,
+      day TEXT,
+      period INTEGER,
+      PRIMARY KEY (teacher_id, day, period),
+      FOREIGN KEY (teacher_id) REFERENCES Teacher(id)
+    )
+  `,
+    (err) => {
+      if (err) {
+        console.error(
+          'Error creating Teacher_Unavailability table:',
+          err.message
+        );
+      } else {
+        console.log('Teacher_Unavailability table ready');
+      }
+    }
+  );
+
+  db.run(
+    `
     CREATE TABLE IF NOT EXISTS Subject (
       course_code TEXT PRIMARY KEY,
       name TEXT,

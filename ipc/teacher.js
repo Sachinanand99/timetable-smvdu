@@ -1,15 +1,15 @@
 const { ipcMain } = require('electron');
-const { teacherQueries } = require('../db/queries');
+const { teacherQueries, teacherAvailabilityQueries } = require('../db/queries');
 
 // Handle add-teacher request
 ipcMain.on('add-teacher', async (event, teacher) => {
-console.log('📥 Received teacher:', teacher);
+  console.log('📥 Received teacher:', teacher);
   try {
     // Validate input
     if (!teacher.id || !teacher.full_name) {
       event.reply('add-teacher-response', {
         success: false,
-        message: 'Teacher ID and Full Name are required'
+        message: 'Teacher ID and Full Name are required',
       });
       return;
     }
@@ -19,7 +19,7 @@ console.log('📥 Received teacher:', teacher);
     if (existingTeacher) {
       event.reply('add-teacher-response', {
         success: false,
-        message: 'A teacher with this ID already exists'
+        message: 'A teacher with this ID already exists',
       });
       return;
     }
@@ -28,13 +28,13 @@ console.log('📥 Received teacher:', teacher);
     await teacherQueries.addTeacher(teacher);
     event.reply('add-teacher-response', {
       success: true,
-      message: 'Teacher added successfully'
+      message: 'Teacher added successfully',
     });
   } catch (error) {
     console.error('Error adding teacher:', error);
     event.reply('add-teacher-response', {
       success: false,
-      message: `Error adding teacher: ${error.message}`
+      message: `Error adding teacher: ${error.message}`,
     });
   }
 });
@@ -45,13 +45,13 @@ ipcMain.on('get-teachers', async (event) => {
     const teachers = await teacherQueries.getAllTeachers();
     event.reply('get-teachers-response', {
       success: true,
-      data: teachers
+      data: teachers,
     });
   } catch (error) {
     console.error('Error getting teachers:', error);
     event.reply('get-teachers-response', {
       success: false,
-      message: `Error getting teachers: ${error.message}`
+      message: `Error getting teachers: ${error.message}`,
     });
   }
 });
@@ -63,19 +63,19 @@ ipcMain.on('get-teacher-by-id', async (event, id) => {
     if (teacher) {
       event.reply('get-teacher-by-id-response', {
         success: true,
-        data: teacher
+        data: teacher,
       });
     } else {
       event.reply('get-teacher-by-id-response', {
         success: false,
-        message: 'Teacher not found'
+        message: 'Teacher not found',
       });
     }
   } catch (error) {
     console.error('Error getting teacher:', error);
     event.reply('get-teacher-by-id-response', {
       success: false,
-      message: `Error getting teacher: ${error.message}`
+      message: `Error getting teacher: ${error.message}`,
     });
   }
 });
@@ -87,7 +87,7 @@ ipcMain.on('update-teacher', async (event, teacher) => {
     if (!teacher.id || !teacher.full_name) {
       event.reply('update-teacher-response', {
         success: false,
-        message: 'Teacher ID and Full Name are required'
+        message: 'Teacher ID and Full Name are required',
       });
       return;
     }
@@ -97,7 +97,7 @@ ipcMain.on('update-teacher', async (event, teacher) => {
     if (!existingTeacher) {
       event.reply('update-teacher-response', {
         success: false,
-        message: 'Teacher not found'
+        message: 'Teacher not found',
       });
       return;
     }
@@ -106,13 +106,13 @@ ipcMain.on('update-teacher', async (event, teacher) => {
     await teacherQueries.updateTeacher(teacher);
     event.reply('update-teacher-response', {
       success: true,
-      message: 'Teacher updated successfully'
+      message: 'Teacher updated successfully',
     });
   } catch (error) {
     console.error('Error updating teacher:', error);
     event.reply('update-teacher-response', {
       success: false,
-      message: `Error updating teacher: ${error.message}`
+      message: `Error updating teacher: ${error.message}`,
     });
   }
 });
@@ -125,7 +125,7 @@ ipcMain.on('delete-teacher', async (event, id) => {
     if (!existingTeacher) {
       event.reply('delete-teacher-response', {
         success: false,
-        message: 'Teacher not found'
+        message: 'Teacher not found',
       });
       return;
     }
@@ -134,13 +134,88 @@ ipcMain.on('delete-teacher', async (event, id) => {
     await teacherQueries.deleteTeacher(id);
     event.reply('delete-teacher-response', {
       success: true,
-      message: 'Teacher deleted successfully'
+      message: 'Teacher deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting teacher:', error);
     event.reply('delete-teacher-response', {
       success: false,
-      message: `Error deleting teacher: ${error.message}`
+      message: `Error deleting teacher: ${error.message}`,
+    });
+  }
+});
+
+// Handle teacher availability fetch
+ipcMain.on('get-teacher-availability', async (event, teacherId) => {
+  try {
+    if (!teacherId) {
+      event.reply('get-teacher-availability-response', {
+        success: false,
+        message: 'Teacher ID is required',
+      });
+      return;
+    }
+
+    const teacher = await teacherQueries.getTeacherById(teacherId);
+    if (!teacher) {
+      event.reply('get-teacher-availability-response', {
+        success: false,
+        message: 'Teacher not found',
+      });
+      return;
+    }
+
+    const data = await teacherAvailabilityQueries.getTeacherAvailability(
+      teacherId
+    );
+    event.reply('get-teacher-availability-response', {
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error('Error getting teacher availability:', error);
+    event.reply('get-teacher-availability-response', {
+      success: false,
+      message: `Error getting teacher availability: ${error.message}`,
+    });
+  }
+});
+
+// Handle teacher availability update
+ipcMain.on('update-teacher-availability', async (event, payload) => {
+  try {
+    const { teacherId, slots } = payload || {};
+    if (!teacherId) {
+      event.reply('update-teacher-availability-response', {
+        success: false,
+        message: 'Teacher ID is required',
+      });
+      return;
+    }
+
+    const teacher = await teacherQueries.getTeacherById(teacherId);
+    if (!teacher) {
+      event.reply('update-teacher-availability-response', {
+        success: false,
+        message: 'Teacher not found',
+      });
+      return;
+    }
+
+    await teacherAvailabilityQueries.setTeacherAvailability(teacherId, slots);
+    const data = await teacherAvailabilityQueries.getTeacherAvailability(
+      teacherId
+    );
+
+    event.reply('update-teacher-availability-response', {
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error('Error updating teacher availability:', error);
+    event.reply('update-teacher-availability-response', {
+      success: false,
+      message: `Error updating teacher availability: ${error.message}`,
     });
   }
 });

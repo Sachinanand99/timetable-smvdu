@@ -53,6 +53,7 @@ export function attachLogic(ipcRenderer) {
         </tr>`;
     });
   }
+  window.filterClassrooms = filterClassrooms;
 
   loadClassrooms();
 }

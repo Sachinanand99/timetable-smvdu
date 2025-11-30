@@ -5,14 +5,21 @@ const {
   classroomQueries,
   subjectQueries,
   classQueries,
+  teacherAvailabilityQueries,
 } = require('../db/queries');
 
 // Genetic Algorithm for Timetable Generation
 class GeneticAlgorithm {
-  constructor(teachingAssignments, classrooms, subjects) {
+  constructor(
+    teachingAssignments,
+    classrooms,
+    subjects,
+    teacherAvailability = {}
+  ) {
     this.teachingAssignments = teachingAssignments;
     this.classrooms = classrooms;
     this.subjects = subjects;
+    this.teacherAvailability = teacherAvailability || {};
     this.days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     this.periods = [1, 2, 3, 4, 5, 6, 7]; // 7 periods per day
     this.timeSlots = [
@@ -178,6 +185,38 @@ class GeneticAlgorithm {
               ];
             const endPeriod = startPeriod + 1;
 
+            if (
+              this.isTeacherSlotBlocked(
+                assignment.teacher_id,
+                day,
+                startPeriod
+              ) ||
+              this.isTeacherSlotBlocked(assignment.teacher_id, day, endPeriod)
+            ) {
+              attempts++;
+              continue;
+            }
+
+            if (
+              this.teacherHasAdjacentConflict(
+                timetable,
+                assignment.teacher_id,
+                day,
+                startPeriod,
+                { allowLabPair: true, labCourseCode: assignment.course_code }
+              ) ||
+              this.teacherHasAdjacentConflict(
+                timetable,
+                assignment.teacher_id,
+                day,
+                endPeriod,
+                { allowLabPair: true, labCourseCode: assignment.course_code }
+              )
+            ) {
+              attempts++;
+              continue;
+            }
+
             // Skip if periods span across lunch break
             if (
               startPeriod < this.lunchBreakPeriod &&
@@ -283,6 +322,25 @@ class GeneticAlgorithm {
               const period =
                 validPeriods[Math.floor(Math.random() * validPeriods.length)];
 
+              if (
+                this.isTeacherSlotBlocked(assignment.teacher_id, day, period)
+              ) {
+                attempts++;
+                continue;
+              }
+
+              if (
+                this.teacherHasAdjacentConflict(
+                  timetable,
+                  assignment.teacher_id,
+                  day,
+                  period
+                )
+              ) {
+                attempts++;
+                continue;
+              }
+
               const conflict = timetable.some(
                 (entry) =>
                   (entry.day === day &&
@@ -373,6 +431,13 @@ class GeneticAlgorithm {
     // Penalize exceeding lecture limits
     const lectureLimitViolations = this.countLectureLimitViolations(timetable);
     fitness -= lectureLimitViolations * 30;
+
+    const availabilityViolations =
+      this.countTeacherAvailabilityViolations(timetable);
+    fitness -= availabilityViolations * 80;
+
+    const teacherConsecutive = this.countTeacherConsecutiveSessions(timetable);
+    fitness -= teacherConsecutive * 60;
 
     return fitness;
   }
@@ -716,6 +781,80 @@ class GeneticAlgorithm {
     }
   }
 
+  // Check if a teacher is blocked/unavailable for a given day and period
+  isTeacherSlotBlocked(teacherId, day, period) {
+    if (!teacherId) return false;
+    const id = teacherId?.toString();
+    const avail = this.teacherAvailability || {};
+    if (!avail[id] || !avail[id][day]) return false;
+    return avail[id][day].includes(period);
+  }
+
+  // Check if assigning a teacher at (day, period) would create an undesirable adjacent conflict.
+  // Options:
+  // - allowLabPair: allow adjacency when the adjacent session is the same lab course (continuous lab)
+  // - labCourseCode: the course_code used for lab pairing checks
+  teacherHasAdjacentConflict(timetable, teacherId, day, period, options = {}) {
+    if (!teacherId) return false;
+    const adjacent = timetable.find(
+      (e) =>
+        e.teacher_id === teacherId &&
+        e.day === day &&
+        (e.period === period - 1 || e.period === period + 1)
+    );
+
+    if (!adjacent) return false;
+
+    if (options.allowLabPair && options.labCourseCode) {
+      // Allow adjacency only if the adjacent session is the same lab course
+      if (adjacent.course_code === options.labCourseCode) return false;
+    }
+
+    // Otherwise treat adjacency as a conflict
+    return true;
+  }
+
+  // Count teacher availability violations in a timetable (teacher scheduled when blocked)
+  countTeacherAvailabilityViolations(timetable) {
+    let violations = 0;
+    for (const entry of timetable) {
+      if (this.isTeacherSlotBlocked(entry.teacher_id, entry.day, entry.period)) {
+        violations++;
+      }
+    }
+    return violations;
+  }
+
+  // Count excessive consecutive sessions for teachers (penalize runs longer than 2)
+  countTeacherConsecutiveSessions(timetable) {
+    const teacherDayPeriods = {};
+    for (const entry of timetable) {
+      const id = entry.teacher_id?.toString();
+      if (!id) continue;
+      if (!teacherDayPeriods[id]) teacherDayPeriods[id] = {};
+      if (!teacherDayPeriods[id][entry.day]) teacherDayPeriods[id][entry.day] = [];
+      teacherDayPeriods[id][entry.day].push(entry.period);
+    }
+
+    let violations = 0;
+    for (const id in teacherDayPeriods) {
+      for (const day in teacherDayPeriods[id]) {
+        const periods = Array.from(new Set(teacherDayPeriods[id][day])).sort((a, b) => a - b);
+        let runLength = 1;
+        for (let i = 1; i < periods.length; i++) {
+          if (periods[i] === periods[i - 1] + 1) {
+            runLength++;
+          } else {
+            if (runLength > 2) violations += runLength - 2;
+            runLength = 1;
+          }
+        }
+        if (runLength > 2) violations += runLength - 2;
+      }
+    }
+    return violations;
+  }
+
   // Run the genetic algorithm
   run() {
     let population = this.generateInitialPopulation();
@@ -806,8 +945,17 @@ ipcMain.on(
       }
 
       const subjects = await subjectQueries.getAllSubjects();
+      const availabilityRecords =
+        await teacherAvailabilityQueries.getAllTeacherAvailability();
+      const teacherAvailabilityLookup =
+        buildTeacherAvailabilityLookup(availabilityRecords);
 
-      const ga = new GeneticAlgorithm(assignments, classrooms, subjects);
+      const ga = new GeneticAlgorithm(
+        assignments,
+        classrooms,
+        subjects,
+        teacherAvailabilityLookup
+      );
       const timetable = ga.run();
 
       await timetableQueries.clearClassTimetable(semester, branch, section);
@@ -835,6 +983,10 @@ ipcMain.on('generate-all-timetables', async (event) => {
     const allClasses = await classQueries.getAllClasses();
     const classrooms = await classroomQueries.getAllClassrooms();
     const subjects = await subjectQueries.getAllSubjects();
+    const availabilityRecords =
+      await teacherAvailabilityQueries.getAllTeacherAvailability();
+    const teacherAvailabilityLookup =
+      buildTeacherAvailabilityLookup(availabilityRecords);
 
     for (const cls of allClasses) {
       const { semester, branch, section } = cls;
@@ -859,7 +1011,12 @@ ipcMain.on('generate-all-timetables', async (event) => {
         continue;
       }
 
-      const ga = new GeneticAlgorithm(assignments, classrooms, subjects);
+      const ga = new GeneticAlgorithm(
+        assignments,
+        classrooms,
+        subjects,
+        teacherAvailabilityLookup
+      );
       const timetable = ga.run();
 
       await timetableQueries.clearClassTimetable(semester, branch, section);
@@ -977,3 +1134,25 @@ ipcMain.on('clear-all-timetables', async (event) => {
 });
 
 console.log('Timetable IPC handlers registered');
+
+function buildTeacherAvailabilityLookup(records = []) {
+  const availability = {};
+  (records || []).forEach((record) => {
+    const teacherId = record.teacher_id?.toString();
+    if (!teacherId) return;
+
+    if (!availability[teacherId]) {
+      availability[teacherId] = {};
+    }
+
+    if (!availability[teacherId][record.day]) {
+      availability[teacherId][record.day] = [];
+    }
+
+    if (record.period != null) {
+      availability[teacherId][record.day].push(record.period);
+    }
+  });
+
+  return availability;
+}
