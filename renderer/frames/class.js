@@ -71,7 +71,7 @@ export function attachLogic(ipcRenderer, bootstrap) {
           <td>${c.section}</td>
           <td>${c.strength}</td>
           <td>
-            <button class="btn btn-sm btn-info" onclick="showClassDetails('${c.semester}', '${c.branch}', '${c.section}')">
+            <button class="btn btn-sm btn-info" onclick="showClassDetails('${c.semester}', '${c.branch}', '${c.section}', '${c.strength}')">
               Details
             </button>
           </td>
@@ -81,7 +81,6 @@ export function attachLogic(ipcRenderer, bootstrap) {
 
   window.showClassDetails = function (semester, branch, section, strength) {
     currentClass = { semester, branch, section, strength };
-    console.log(strength);
     document.getElementById(
       'classDetailsModalLabel'
     ).textContent = `Class Details: ${semester} - ${branch} - ${section} - ${strength}`;

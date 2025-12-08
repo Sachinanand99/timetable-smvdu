@@ -203,7 +203,6 @@ ipcMain.on('generate-reports', async (event) => {
     // 2) Teacher-wise (one PDF, multiple pages)
     {
       const teachers = await teacherQueries.getAllTeachers();
-      console.log(teachers)
       const pages = [];
       for (const t of teachers) {
         const tt = await timetableQueries.getTeacherTimetable(t.id);

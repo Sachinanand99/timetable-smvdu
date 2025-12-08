@@ -3,7 +3,6 @@ const { teacherQueries, teacherAvailabilityQueries } = require('../db/queries');
 
 // Handle add-teacher request
 ipcMain.on('add-teacher', async (event, teacher) => {
-  console.log('📥 Received teacher:', teacher);
   try {
     // Validate input
     if (!teacher.id || !teacher.full_name) {
