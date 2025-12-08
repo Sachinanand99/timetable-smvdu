@@ -5,8 +5,250 @@ const {
   classroomQueries,
   subjectQueries,
   classQueries,
+  teacherQueries,
   teacherAvailabilityQueries,
 } = require('../db/queries');
+// ipc/timetable.js
+const path = require('path');
+const os = require('os');
+const { BrowserWindow } = require('electron'); // reuse your main BrowserWindow for printing
+const fs = require('fs');
+
+function getSemesterSession() {
+  const now = new Date();
+  const month = now.getMonth() + 1; // JS months are 0–11
+  const year = now.getFullYear();
+
+  // Always session year to year+1
+  const session = `${year}–${year + 1}`;
+
+  // Odd if Jan–Jun, Even if Jul–Dec
+  const semType = month >= 1 && month <= 6 ? 'Odd Semester' : 'Even Semester';
+
+  return { session, semType };
+}
+
+function buildClassHTML(cls, timetable, subjects, meta, includeCourseDetails = true) {
+  const { session, semType } = getSemesterSession();
+  // meta: { hall, effectiveDate }
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  const slots = [
+    '9:00 - 10:00','10:00 - 11:00','11:00 - 12:00',
+    '12:00 - 1:00','2:00 - 3:00','3:00 - 4:00', '4:00 - 5:00'
+  ];
+
+  // Build grid body rows
+  const rows = days.map(day => {
+    const cells = slots.map((_, idx) => {
+      const p = idx + 1;
+      const e = timetable.find(t => t.day === day && t.period === p);
+      if (!e) return `<td>-</td>`;
+      return `<td>
+        <strong>${e.subject_name || e.course_code}</strong><br>
+        ${e.teacher_name || ''}<br>
+        ${e.room_id || ''}
+      </td>`;
+    }).join('');
+    return `<tr><th>${day.toUpperCase()}</th>${cells}</tr>`;
+  }).join('');
+
+  // Course details
+  const semesterLabel =
+    cls.semester && cls.semester.trim() !== ''
+      ? `${cls.semester} SEMESTER`
+      : `${cls.semester}`;
+
+  const headerHTML = `
+  <h1>SCHOOL OF CSE, SMVDU</h1>
+  <h2>B.Tech CSE (${cls.section}) – ${semesterLabel} Timetable</h2>
+`;
+
+  let courseDetailsHTML = '';
+  if (includeCourseDetails) {
+    const courseRows = subjects.map(s => `
+    <tr>
+      <td>${s.category || ''}</td>
+      <td>${s.course_code || ''}</td>
+      <td>${s.name || ''}</td>
+      <td>${s.lecture_hr || 0}</td>
+      <td>${s.theory_hr || 0}</td>
+      <td>${s.practical_hr || 0}</td>
+      <td>${s.credits || 0}</td>
+      <td>${s.course_coordinator || ''}</td>
+      <td>${s.display_code || ''}</td>
+    </tr>
+  `).join('');
+
+    const totalCredits = subjects.reduce((sum, s) => sum + (s.credits || 0), 0);
+
+    courseDetailsHTML = `<div class="page-break"></div>
+
+  <h3>Course details</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Category</th><th>Course Code</th><th>Course Title</th>
+        <th>L</th><th>T</th><th>P</th><th>C</th>
+        <th>Course Coordinator</th><th>Code</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${courseRows}
+      <tr>
+        <td colspan="6" style="text-align:right;font-weight:bold;">Total Credits</td>
+        <td style="font-weight:bold;">${totalCredits}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tbody>
+  </table>`
+  }
+    return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${cls.semester}-${cls.branch}-${cls.section} Timetable</title>
+<style>
+  body { font-family: "Times New Roman", Times, serif; margin: 30px; }
+  h1, h2, h3 { margin: 4px 0; text-align: center; }
+  .meta { text-align: center; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td { border: 1px solid #000; padding: 8px; font-size: 12px; }
+  thead th { background: #f2f2f2; font-weight: bold; }
+  tbody th { background: #f9f9f9; font-weight: bold; width: 120px; }
+  .footer { display:flex; justify-content:space-between; margin-top: 20px; font-size: 11px; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+${headerHTML}
+  <div class="meta"><br>
+  ${semType} – Session ${session}</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Day/Time</th>
+        ${slots.map((s) => `<th>${s}</th>`).join('')}
+      </tr>
+    </thead>
+    <tbody>
+      ${rows}
+    </tbody>
+  </table>
+  ${courseDetailsHTML}
+  <div class="footer">
+    <div>Sudesh Kumar, Faculty In-charge, Time Table, SoCSE</div>
+    <div>Dr. Sunanda, Head, SoCSE</div>
+  </div>
+</body>
+</html>`;
+  }
+
+async function renderHTMLToPDF(htmlString, pdfPath, parentWindow) {
+  const tmpHtml = path.join(os.tmpdir(), `tt-${Date.now()}.html`);
+  fs.writeFileSync(tmpHtml, htmlString, 'utf8');
+
+  const printWin = new BrowserWindow({
+    width: 1024, height: 768, show: false,
+    webPreferences: { offscreen: true }
+  });
+
+  await printWin.loadFile(tmpHtml);
+  const data = await printWin.webContents.printToPDF({
+    marginsType: 1,
+    printBackground: true,
+    pageSize: 'A4'
+  });
+  fs.writeFileSync(pdfPath, data);
+  printWin.destroy();
+}
+
+ipcMain.on('generate-reports', async (event) => {
+  try {
+    const baseDir = path.join(__dirname, '../timetable_reports');
+    if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir);
+
+    const now = new Date();
+    const uniqueId = now
+      .toISOString()
+      .replace(/:/g, '-') // replace colons
+      .replace(/\..+/, ''); // drop milliseconds
+    const outputDir = path.join(baseDir, uniqueId);
+
+    fs.mkdirSync(outputDir);
+
+    // 1) Class-wise PDFs (multiple)
+    const allClasses = await classQueries.getAllClasses();
+
+    for (const cls of allClasses) {
+      const tt = await timetableQueries.getClassTimetable(cls.semester, cls.branch, cls.section);
+      const assignments =
+        await teachingAssignmentQueries.getTeachingAssignmentsByClass(
+          cls.semester,
+          cls.branch,
+          cls.section
+        );
+      const allSubjects = await subjectQueries.getAllSubjects();
+      const classSubjects = allSubjects.filter((sub) =>
+        assignments.some((a) => a.course_code === sub.course_code)
+      );
+      const html = buildClassHTML(cls, tt, classSubjects, {
+        hall: '',
+        effectiveDate: Date.UTC.now,
+      }, true);
+      const pdfPath = path.join(outputDir, `${cls.semester}-${cls.section}-${cls.branch}.pdf`);
+      await renderHTMLToPDF(html, pdfPath, BrowserWindow.getFocusedWindow());
+    }
+
+    // 2) Teacher-wise (one PDF, multiple pages)
+    {
+      const teachers = await teacherQueries.getAllTeachers();
+      console.log(teachers)
+      const pages = [];
+      for (const t of teachers) {
+        const tt = await timetableQueries.getTeacherTimetable(t.id);
+        const cls = { semester: '', branch: '', section: t.full_name }; // for header convenience
+        pages.push(buildClassHTML(
+          cls,
+          tt,
+          [], // or teacher’s subjects if you want a second table
+          { hall: '', effectiveDate: '12th September, 2025' }, false
+        ));
+      }
+      // Concatenate HTML pages with page-breaks for one PDF
+      const joined = pages.join('<div class="page-break"></div>');
+      const pdfPath = path.join(outputDir, 'AllTeachers.pdf');
+      await renderHTMLToPDF(joined, pdfPath, BrowserWindow.getFocusedWindow());
+    }
+
+    // 3) Classroom-wise (one PDF, multiple pages)
+    {
+      const rooms = await classroomQueries.getAllClassrooms();
+      const pages = [];
+      for (const r of rooms) {
+        const tt = await timetableQueries.getClassroomTimetable(r.room_id);
+        const cls = { semester: '', branch: r.type, section: r.room_id };
+        pages.push(buildClassHTML(
+          cls,
+          tt,
+          [], // or courses per room
+          { hall: '', effectiveDate: '12th September, 2025' }, false
+        ));
+      }
+      const joined = pages.join('<div class="page-break"></div>');
+      const pdfPath = path.join(outputDir, 'AllClassrooms.pdf');
+      await renderHTMLToPDF(joined, pdfPath, BrowserWindow.getFocusedWindow());
+    }
+
+    event.reply('generate-reports-response', {
+      success: true,
+      message: 'Reports generated successfully in timetable_reports'
+    });
+  } catch (err) {
+    console.error(err);
+    event.reply('generate-reports-response', { success: false, message: err.message });
+  }
+});
 
 // Genetic Algorithm for Timetable Generation
 class GeneticAlgorithm {

@@ -52,6 +52,25 @@ export function attachLogic(ipcRenderer) {
     }
   });
 
+  const generateReportBtn = document.getElementById('generate-report-btn');
+
+  if (generateReportBtn) {
+    generateReportBtn.addEventListener('click', () => {
+      showToast('Generating reports...', 'info');
+      ipcRenderer.send('generate-reports');
+    });
+  }
+
+  ipcRenderer.on('generate-reports-response', (event, res) => {
+    if (res.success) {
+      showToast('Reports generated successfully', 'success');
+      logStatus(res.message);
+    } else {
+      showToast('Error: ' + res.message, 'danger');
+      logStatus(res.message);
+    }
+  });
+
   ipcRenderer.on('get-teachers-response', (event, res) => {
     if (res.success) {
       allTeachers = res.data;

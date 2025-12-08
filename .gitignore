@@ -2,3 +2,4 @@
 .editorconfig
 *.db
 node_modules
+timetable_reports

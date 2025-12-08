@@ -79,8 +79,9 @@ export function attachLogic(ipcRenderer, bootstrap) {
     });
   }
 
-  window.showClassDetails = function (semester, branch, section) {
+  window.showClassDetails = function (semester, branch, section, strength) {
     currentClass = { semester, branch, section, strength };
+    console.log(strength);
     document.getElementById(
       'classDetailsModalLabel'
     ).textContent = `Class Details: ${semester} - ${branch} - ${section} - ${strength}`;
