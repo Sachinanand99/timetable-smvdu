@@ -8,7 +8,6 @@ const {
   teacherQueries,
   teacherAvailabilityQueries,
 } = require('../db/queries');
-// ipc/timetable.js
 const path = require('path');
 const os = require('os');
 const { BrowserWindow } = require('electron'); // reuse your main BrowserWindow for printing
