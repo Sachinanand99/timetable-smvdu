@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron');
+const { ipcMain, app } = require('electron');
 const {
   timetableQueries,
   teachingAssignmentQueries,
@@ -164,89 +164,116 @@ async function renderHTMLToPDF(htmlString, pdfPath, parentWindow) {
 }
 
 ipcMain.on('generate-reports', async (event) => {
-  try {
-    const baseDir = path.join(__dirname, '../timetable_reports');
-    if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir);
+try {
+  // Base path inside Documents
+  const baseDir = path.join(
+    app.getPath('documents'),
+    'timetable-smvdu-data',
+    'timetable_reports'
+  );
 
-    const now = new Date();
-    const uniqueId = now
-      .toISOString()
-      .replace(/:/g, '-') // replace colons
-      .replace(/\..+/, ''); // drop milliseconds
-    const outputDir = path.join(baseDir, uniqueId);
+  // Ensure parent folders exist (recursive handles nested dirs)
+  if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
 
-    fs.mkdirSync(outputDir);
+  // Unique timestamped subfolder
+  const now = new Date();
+  const uniqueId = now.toISOString().replace(/:/g, '-').replace(/\..+/, '');
+  const outputDir = path.join(baseDir, uniqueId);
 
-    // 1) Class-wise PDFs (multiple)
-    const allClasses = await classQueries.getAllClasses();
+  fs.mkdirSync(outputDir);
 
-    for (const cls of allClasses) {
-      const tt = await timetableQueries.getClassTimetable(cls.semester, cls.branch, cls.section);
-      const assignments =
-        await teachingAssignmentQueries.getTeachingAssignmentsByClass(
-          cls.semester,
-          cls.branch,
-          cls.section
-        );
-      const allSubjects = await subjectQueries.getAllSubjects();
-      const classSubjects = allSubjects.filter((sub) =>
-        assignments.some((a) => a.course_code === sub.course_code)
+  // 1) Class-wise PDFs (multiple)
+  const allClasses = await classQueries.getAllClasses();
+
+  for (const cls of allClasses) {
+    const tt = await timetableQueries.getClassTimetable(
+      cls.semester,
+      cls.branch,
+      cls.section
+    );
+    const assignments =
+      await teachingAssignmentQueries.getTeachingAssignmentsByClass(
+        cls.semester,
+        cls.branch,
+        cls.section
       );
-      const html = buildClassHTML(cls, tt, classSubjects, {
+    const allSubjects = await subjectQueries.getAllSubjects();
+    const classSubjects = allSubjects.filter((sub) =>
+      assignments.some((a) => a.course_code === sub.course_code)
+    );
+    const html = buildClassHTML(
+      cls,
+      tt,
+      classSubjects,
+      {
         hall: '',
         effectiveDate: Date.UTC.now,
-      }, true);
-      const pdfPath = path.join(outputDir, `${cls.semester}-${cls.section}-${cls.branch}.pdf`);
-      await renderHTMLToPDF(html, pdfPath, BrowserWindow.getFocusedWindow());
-    }
+      },
+      true
+    );
+    const pdfPath = path.join(
+      outputDir,
+      `${cls.semester}-${cls.section}-${cls.branch}.pdf`
+    );
+    await renderHTMLToPDF(html, pdfPath, BrowserWindow.getFocusedWindow());
+  }
 
-    // 2) Teacher-wise (one PDF, multiple pages)
-    {
-      const teachers = await teacherQueries.getAllTeachers();
-      const pages = [];
-      for (const t of teachers) {
-        const tt = await timetableQueries.getTeacherTimetable(t.id);
-        const cls = { semester: '', branch: '', section: t.full_name }; // for header convenience
-        pages.push(buildClassHTML(
+  // 2) Teacher-wise (one PDF, multiple pages)
+  {
+    const teachers = await teacherQueries.getAllTeachers();
+    const pages = [];
+    for (const t of teachers) {
+      const tt = await timetableQueries.getTeacherTimetable(t.id);
+      const cls = { semester: '', branch: '', section: t.full_name }; // for header convenience
+      pages.push(
+        buildClassHTML(
           cls,
           tt,
           [], // or teacher’s subjects if you want a second table
-          { hall: '', effectiveDate: '12th September, 2025' }, false
-        ));
-      }
-      // Concatenate HTML pages with page-breaks for one PDF
-      const joined = pages.join('<div class="page-break"></div>');
-      const pdfPath = path.join(outputDir, 'AllTeachers.pdf');
-      await renderHTMLToPDF(joined, pdfPath, BrowserWindow.getFocusedWindow());
+          { hall: '', effectiveDate: '12th September, 2025' },
+          false
+        )
+      );
     }
+    // Concatenate HTML pages with page-breaks for one PDF
+    const joined = pages.join('<div class="page-break"></div>');
+    const pdfPath = path.join(outputDir, 'AllTeachers.pdf');
+    await renderHTMLToPDF(joined, pdfPath, BrowserWindow.getFocusedWindow());
+  }
 
-    // 3) Classroom-wise (one PDF, multiple pages)
-    {
-      const rooms = await classroomQueries.getAllClassrooms();
-      const pages = [];
-      for (const r of rooms) {
-        const tt = await timetableQueries.getClassroomTimetable(r.room_id);
-        const cls = { semester: '', branch: r.type, section: r.room_id };
-        pages.push(buildClassHTML(
+  // 3) Classroom-wise (one PDF, multiple pages)
+  {
+    const rooms = await classroomQueries.getAllClassrooms();
+    const pages = [];
+    for (const r of rooms) {
+      const tt = await timetableQueries.getClassroomTimetable(r.room_id);
+      const cls = { semester: '', branch: r.type, section: r.room_id };
+      pages.push(
+        buildClassHTML(
           cls,
           tt,
           [], // or courses per room
-          { hall: '', effectiveDate: '12th September, 2025' }, false
-        ));
-      }
-      const joined = pages.join('<div class="page-break"></div>');
-      const pdfPath = path.join(outputDir, 'AllClassrooms.pdf');
-      await renderHTMLToPDF(joined, pdfPath, BrowserWindow.getFocusedWindow());
+          { hall: '', effectiveDate: '12th September, 2025' },
+          false
+        )
+      );
     }
-
-    event.reply('generate-reports-response', {
-      success: true,
-      message: 'Reports generated successfully in timetable_reports'
-    });
-  } catch (err) {
-    console.error(err);
-    event.reply('generate-reports-response', { success: false, message: err.message });
+    const joined = pages.join('<div class="page-break"></div>');
+    const pdfPath = path.join(outputDir, 'AllClassrooms.pdf');
+    await renderHTMLToPDF(joined, pdfPath, BrowserWindow.getFocusedWindow());
   }
+
+  event.reply('generate-reports-response', {
+    success: true,
+    message: 'Reports generated successfully in timetable_reports',
+  });
+} catch (err) {
+  console.error(err);
+  event.reply('generate-reports-response', {
+    success: false,
+    message: err.message,
+  });
+}
 });
 
 // Genetic Algorithm for Timetable Generation

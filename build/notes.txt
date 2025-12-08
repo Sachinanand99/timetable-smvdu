@@ -1,0 +1,3 @@
+npm run dist
+npm run dist -- -m
+npm run dist -- -l

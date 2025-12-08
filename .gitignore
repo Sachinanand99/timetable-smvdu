@@ -3,3 +3,5 @@
 *.db
 node_modules
 timetable_reports
+dist
+dbbackup

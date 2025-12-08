@@ -1,7 +1,19 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { app } = require('electron');
+const fs = require('fs');
 
-const dbPath = path.join(__dirname, '..', 'university.db');
+const dbPath = path.join(
+  app.getPath('documents'),
+  'timetable-smvdu-data',
+  'university.db'
+);
+
+const baseDir = path.dirname(dbPath);
+if (!fs.existsSync(baseDir)) {
+  fs.mkdirSync(baseDir, { recursive: true });
+}
+
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
