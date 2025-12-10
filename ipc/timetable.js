@@ -66,7 +66,6 @@ function buildClassHTML(cls, timetable, subjects, meta, includeCourseDetails = t
   if (includeCourseDetails) {
     const courseRows = subjects.map(s => `
     <tr>
-      <td>${s.category || ''}</td>
       <td>${s.course_code || ''}</td>
       <td>${s.name || ''}</td>
       <td>${s.lecture_hr || 0}</td>
@@ -86,7 +85,7 @@ function buildClassHTML(cls, timetable, subjects, meta, includeCourseDetails = t
   <table>
     <thead>
       <tr>
-        <th>Category</th><th>Course Code</th><th>Course Title</th>
+        <th>Course Code</th><th>Course Title</th>
         <th>L</th><th>T</th><th>P</th><th>C</th>
         <th>Course Coordinator</th><th>Code</th>
       </tr>
