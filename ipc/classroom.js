@@ -1,5 +1,9 @@
 const { ipcMain } = require('electron');
-const { classroomQueries } = require('../db/queries');
+const {
+  subjectQueries,
+  classQueries,
+  classroomQueries,
+} = require('../db/queries');
 
 // Handle add-classroom request
 ipcMain.on('add-classroom', async (event, classroom) => {
@@ -184,6 +188,136 @@ ipcMain.on('delete-classroom', async (event, id) => {
     event.reply('delete-classroom-response', {
       success: false,
       message: `Error deleting classroom: ${error.message}`
+    });
+  }
+});
+
+ipcMain.on('assign-lab-to-subject', async (event, { course_code, room_id }) => {
+  try {
+    // Validate input
+    if (!course_code || !room_id) {
+      event.reply('assign-lab-to-subject-response', {
+        success: false,
+        message: 'Course code and lab room ID are required',
+      });
+      return;
+    }
+
+    // Validate subject
+    const subject = await subjectQueries.getSubjectByCode(course_code);
+    if (!subject) {
+      event.reply('assign-lab-to-subject-response', {
+        success: false,
+        message: `Subject not found: ${course_code}`,
+      });
+      return;
+    }
+
+    // Validate classroom (must be a lab)
+    const classroom = await classroomQueries.getClassroomById(room_id);
+    if (!classroom) {
+      event.reply('assign-lab-to-subject-response', {
+        success: false,
+        message: `Lab room not found: ${room_id}`,
+      });
+      return;
+    }
+    if (classroom.type !== 'lab') {
+      event.reply('assign-lab-to-subject-response', {
+        success: false,
+        message: `Room ${room_id} is not a lab`,
+      });
+      return;
+    }
+
+    // Update
+    await classroomQueries.assignLabToSubject(course_code, room_id);
+    const updated = await subjectQueries.getSubjectByCode(course_code);
+
+    event.reply('assign-lab-to-subject-response', {
+      success: true,
+      data: updated,
+    });
+  } catch (err) {
+    console.error('Error assigning lab to subject:', err);
+    event.reply('assign-lab-to-subject-response', {
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+ipcMain.on(
+  'assign-classroom-to-class',
+  async (event, { semester, branch, section, room_id }) => {
+    try {
+      if (!semester || !branch || !section || !room_id) {
+        event.reply('assign-classroom-to-class-response', {
+          success: false,
+          message: 'Semester, branch, section, and room ID are required',
+        });
+        return;
+      }
+
+      const klass = await classQueries.getClassByKey(semester, branch, section); // implement this in classQueries
+      if (!klass) {
+        event.reply('assign-classroom-to-class-response', {
+          success: false,
+          message: `Class not found: ${semester}-${branch}-${section}`,
+        });
+        return;
+      }
+
+      const classroom = await classroomQueries.getClassroomById(room_id);
+      if (!classroom) {
+        event.reply('assign-classroom-to-class-response', {
+          success: false,
+          message: `Classroom not found: ${room_id}`,
+        });
+        return;
+      }
+      if (classroom.type !== 'lecture') {
+        event.reply('assign-classroom-to-class-response', {
+          success: false,
+          message: `Room ${room_id} is not a lecture room`,
+        });
+        return;
+      }
+
+      await classroomQueries.assignClassroomToClass(
+        semester,
+        branch,
+        section,
+        room_id
+      );
+      const updated = await classQueries.getClassByKey(
+        semester,
+        branch,
+        section
+      );
+
+      event.reply('assign-classroom-to-class-response', {
+        success: true,
+        data: updated,
+      });
+    } catch (err) {
+      console.error('Error assigning classroom to class:', err);
+      event.reply('assign-classroom-to-class-response', {
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+
+ipcMain.on('delete-lab-assignment', async (event, course_code) => {
+  try {
+    await classroomQueries.assignLabToSubject(course_code, null); // set lab_room_id to null
+    event.reply('delete-lab-assignment-response', { success: true });
+  } catch (err) {
+    event.reply('delete-lab-assignment-response', {
+      success: false,
+      message: err.message,
     });
   }
 });

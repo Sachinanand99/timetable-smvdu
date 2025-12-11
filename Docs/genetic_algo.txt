@@ -1,0 +1,100 @@
+INPUTS:
+  teachingAssignments   ← list of {teacher_id, course_code, semester, branch, section}
+  classrooms            ← list of {room_id, capacity, type}
+  subjects              ← list of {course_code, name, lecture_hr, theory_hr, practical_hr, credits, lab_room_id}
+  teacherAvailability   ← map {teacher_id → unavailable slots}
+
+CONSTANTS:
+  days                  ← [Monday, Tuesday, Wednesday, Thursday, Friday]
+  periods               ← [1..7]   // 7 periods per day
+  lunchBreakPeriod      ← 4
+  maxLecturesPerWeek    ← 3
+  populationSize        ← 100
+  maxGenerations        ← 500
+  mutationRate          ← 0.1
+  elitismCount          ← 5
+
+----------------------------------------------------
+FUNCTION generateInitialPopulation():
+  population ← []
+  FOR i = 1 TO populationSize:
+    timetable ← generateRandomTimetable()
+    population.ADD(timetable)
+  RETURN population
+
+----------------------------------------------------
+FUNCTION generateRandomTimetable():
+  timetable ← []
+  Shuffle(teachingAssignments)
+
+  // Trackers
+  classSubjectDayTracker       ← {}   // prevent same subject twice in one day
+  classRoomTracker             ← {}   // ensure consistent room per subject
+  subjectLectureCountTracker   ← {}   // count lectures per subject per week
+  labAllocations               ← {}   // mark labs allocated
+  classSectionRooms            ← {}   // { lecture: room_id, labs: {course_code → room_id} }
+
+  // Group assignments by class
+  assignmentsByClass ← group teachingAssignments BY (semester, branch, section)
+
+  // Pre-assign rooms
+  FOR each classKey IN assignmentsByClass:
+    classSectionRooms[classKey].lecture ← pickRandomLectureRoom()
+    FOR each assignment IN assignmentsByClass[classKey]:
+      subj ← find subject by assignment.course_code
+      IF subj.practical_hr > 0:
+        IF subj.lab_room_id EXISTS:
+          classSectionRooms[classKey].labs[subj.course_code] ← subj.lab_room_id
+        ELSE:
+          classSectionRooms[classKey].labs[subj.course_code] ← pickRandomLabRoom()
+
+  // Allocate timetable entries
+  FOR each classKey IN assignmentsByClass:
+    FOR each assignment IN assignmentsByClass[classKey]:
+      subj ← find subject by assignment.course_code
+      subjectKey ← classKey + subj.course_code
+      INIT subjectLectureCountTracker[subjectKey] = 0
+
+      IF subj.practical_hr > 0:
+        hoursToAllocate ← 2   // labs are 2 continuous hours
+        assignedRoom ← classSectionRooms[classKey].labs[subj.course_code]
+        TRY allocateLabPair(timetable, assignment, subj, assignedRoom)
+      ELSE:
+        hoursToAllocate ← min(maxLecturesPerWeek - subjectLectureCountTracker[subjectKey],
+                              subj.lecture_hr + subj.theory_hr)
+        assignedRoom ← classSectionRooms[classKey].lecture
+        TRY allocateLectures(timetable, assignment, subj, assignedRoom, hoursToAllocate)
+
+  RETURN timetable
+
+----------------------------------------------------
+FUNCTION evaluateFitness(timetable):
+  fitness ← 0
+  fitness -= countConflicts(timetable) * 100
+  fitness -= countStudentGaps(timetable) * 20
+  fitness += evaluateDayBalance(timetable) * 5
+  fitness += evaluateRoomAllocation(timetable) * 20
+  fitness -= countSubjectRepetitions(timetable) * 50
+  fitness -= countInconsistentRooms(timetable) * 60
+  fitness -= countLabViolations(timetable) * 40
+  fitness -= countLectureLimitViolations(timetable) * 30
+  fitness -= countTeacherAvailabilityViolations(timetable) * 80
+  fitness -= countTeacherConsecutiveSessions(timetable) * 60
+  RETURN fitness
+
+----------------------------------------------------
+FUNCTION runGA():
+  population ← generateInitialPopulation()
+  FOR generation = 1 TO maxGenerations:
+    Evaluate fitness of each timetable
+    Sort population by fitness
+    elites ← top elitismCount timetables
+    newPopulation ← elites
+    WHILE newPopulation.size < populationSize:
+      parent1, parent2 ← selectParents(population)
+      child ← crossover(parent1, parent2)
+      IF random() < mutationRate:
+        child ← mutate(child)
+      newPopulation.ADD(child)
+    population ← newPopulation
+  RETURN best timetable in population

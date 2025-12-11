@@ -298,7 +298,7 @@ class GeneticAlgorithm {
       '4 pm - 5 pm',
     ];
     this.populationSize = 50;
-    this.maxGenerations = 100;
+    this.maxGenerations = 200;
     this.mutationRate = 0.1;
     this.elitismCount = 5;
     this.lunchBreakPeriod = 4; // Lunch break after period 4
@@ -341,10 +341,7 @@ class GeneticAlgorithm {
 
     // Pre-assign classrooms to each class/section
     for (const classKey in assignmentsByClass) {
-      classSectionRooms[classKey] = {
-        lecture: null,
-        lab: null,
-      };
+      classSectionRooms[classKey] = { lecture: null, labs: {} };
 
       // Assign a consistent lecture room for this class/section
       const lectureRooms = this.classrooms.filter((c) => c.type === 'lecture');
@@ -353,11 +350,25 @@ class GeneticAlgorithm {
           lectureRooms[Math.floor(Math.random() * lectureRooms.length)].room_id;
       }
 
-      // Assign a consistent lab room for this class/section
-      const labRooms = this.classrooms.filter((c) => c.type === 'lab');
-      if (labRooms.length > 0) {
-        classSectionRooms[classKey].lab =
-          labRooms[Math.floor(Math.random() * labRooms.length)].room_id;
+      const classAssignments = assignmentsByClass[classKey];
+      for (const assignment of classAssignments) {
+        const subj = this.subjects.find(
+          (s) => s.course_code === assignment.course_code
+        );
+        if (subj && subj.practical_hr > 0) {
+          if (subj.lab_room_id) {
+            // ✅ Use the lab assigned in DB
+            classSectionRooms[classKey].labs[subj.course_code] =
+              subj.lab_room_id;
+          } else {
+            // ❌ If no lab_room_id, assign once at initialization
+            const labRooms = this.classrooms.filter((c) => c.type === 'lab');
+            if (labRooms.length > 0) {
+              classSectionRooms[classKey].labs[subj.course_code] =
+                labRooms[Math.floor(Math.random() * labRooms.length)].room_id;
+            }
+          }
+        }
       }
     }
 
@@ -403,32 +414,27 @@ class GeneticAlgorithm {
 
         // Use the pre-assigned classroom for this class/section based on subject type
         let assignedRoomId = null;
-        if (isLab && classSectionRooms[classKey].lab) {
-          assignedRoomId = classSectionRooms[classKey].lab;
+        if (isLab) {
+          assignedRoomId =
+            classSectionRooms[classKey].labs[subject.course_code];
         } else if (!isLab && classSectionRooms[classKey].lecture) {
           assignedRoomId = classSectionRooms[classKey].lecture;
         }
 
         // If no pre-assigned room, find a suitable one
         if (!assignedRoomId) {
-          const suitableClassrooms = this.classrooms.filter((c) => {
-            if (isLab && c.type === 'lab') return true;
-            if (!isLab && c.type === 'lecture') return true;
-            return false;
-          });
-
-          if (suitableClassrooms.length === 0) continue;
-
-          const classroom =
-            suitableClassrooms[
-              Math.floor(Math.random() * suitableClassrooms.length)
-            ];
-          assignedRoomId = classroom.room_id;
-
-          // Store this assignment for future use
           if (isLab) {
-            classSectionRooms[classKey].lab = assignedRoomId;
+            // If no lab pre-assigned, skip allocation (force DB lab_room_id to be set)
+            continue;
           } else {
+            // For lectures, still allow fallback
+            const lectureRooms = this.classrooms.filter(
+              (c) => c.type === 'lecture'
+            );
+            if (lectureRooms.length === 0) continue;
+            assignedRoomId =
+              lectureRooms[Math.floor(Math.random() * lectureRooms.length)]
+                .room_id;
             classSectionRooms[classKey].lecture = assignedRoomId;
           }
         }
@@ -530,7 +536,7 @@ class GeneticAlgorithm {
               );
 
             if (!conflict && !subjectAlreadyOnDay) {
-              // Add first hour
+              // ✅ Place both periods together
               timetable.push({
                 semester: assignment.semester,
                 branch: assignment.branch,
@@ -544,7 +550,6 @@ class GeneticAlgorithm {
                 lab_session: 1,
               });
 
-              // Add second hour
               timetable.push({
                 semester: assignment.semester,
                 branch: assignment.branch,
@@ -558,7 +563,7 @@ class GeneticAlgorithm {
                 lab_session: 2,
               });
 
-              // Track the allocation
+              // Track allocation
               if (!classSubjectDayTracker[classKey][day])
                 classSubjectDayTracker[classKey][day] = [];
               classSubjectDayTracker[classKey][day].push(
@@ -570,6 +575,7 @@ class GeneticAlgorithm {
               allocated = true;
             }
             attempts++;
+            continue;
           }
         } else {
           // For regular lectures (non-lab)
@@ -781,36 +787,33 @@ class GeneticAlgorithm {
       const roomKey = entry.room_id;
       const isLab = entry.is_lab;
 
-      // Track by subject
+      // Track by subject (each subject should always use the same room)
       if (!classSubjectRooms[classKey]) classSubjectRooms[classKey] = {};
       if (!classSubjectRooms[classKey][subjectKey]) {
         classSubjectRooms[classKey][subjectKey] = roomKey;
       } else if (classSubjectRooms[classKey][subjectKey] !== roomKey) {
         // Different room for the same subject and class
-        inconsistencies += 2; // Higher penalty for subject inconsistency
+        inconsistencies += 2;
       }
 
-      // Track by class/section and room type
+      // Track by class/section and room type (lecture vs lab consistency)
       if (!classSectionRooms[classKey]) {
         classSectionRooms[classKey] = {
           lecture: null,
-          lab: null,
+          // removed lab property, since labs are tracked per subject
         };
       }
 
       if (isLab) {
-        if (classSectionRooms[classKey].lab === null) {
-          classSectionRooms[classKey].lab = roomKey;
-        } else if (classSectionRooms[classKey].lab !== roomKey) {
-          // Different lab room for the same class
-          inconsistencies += 3; // Even higher penalty for class/section inconsistency
-        }
+        // Labs are already tracked per subject above, so no need for class-level lab consistency
+        // If you want to enforce "all labs for a class in one room", you could add logic here,
+        // but with labs[course_code] mapping, this is redundant.
       } else {
         if (classSectionRooms[classKey].lecture === null) {
           classSectionRooms[classKey].lecture = roomKey;
         } else if (classSectionRooms[classKey].lecture !== roomKey) {
           // Different lecture room for the same class
-          inconsistencies += 3; // Even higher penalty for class/section inconsistency
+          inconsistencies += 3;
         }
       }
     }
@@ -1084,7 +1087,9 @@ class GeneticAlgorithm {
   countTeacherAvailabilityViolations(timetable) {
     let violations = 0;
     for (const entry of timetable) {
-      if (this.isTeacherSlotBlocked(entry.teacher_id, entry.day, entry.period)) {
+      if (
+        this.isTeacherSlotBlocked(entry.teacher_id, entry.day, entry.period)
+      ) {
         violations++;
       }
     }
@@ -1098,14 +1103,17 @@ class GeneticAlgorithm {
       const id = entry.teacher_id?.toString();
       if (!id) continue;
       if (!teacherDayPeriods[id]) teacherDayPeriods[id] = {};
-      if (!teacherDayPeriods[id][entry.day]) teacherDayPeriods[id][entry.day] = [];
+      if (!teacherDayPeriods[id][entry.day])
+        teacherDayPeriods[id][entry.day] = [];
       teacherDayPeriods[id][entry.day].push(entry.period);
     }
 
     let violations = 0;
     for (const id in teacherDayPeriods) {
       for (const day in teacherDayPeriods[id]) {
-        const periods = Array.from(new Set(teacherDayPeriods[id][day])).sort((a, b) => a - b);
+        const periods = Array.from(new Set(teacherDayPeriods[id][day])).sort(
+          (a, b) => a - b
+        );
         let runLength = 1;
         for (let i = 1; i < periods.length; i++) {
           if (periods[i] === periods[i - 1] + 1) {

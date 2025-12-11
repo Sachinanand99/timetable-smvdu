@@ -131,6 +131,10 @@ const subjectQueries = {
     return getAllRows('SELECT * FROM Subject ORDER BY name');
   },
 
+  getAllSubjectsforClassroom: () => {
+  return getAllRows('SELECT course_code, name, lab_room_id FROM Subject ORDER BY name');
+},
+
   getSubjectByCode: (code) => {
     return getRow('SELECT * FROM Subject WHERE course_code = ?', [code]);
   },
@@ -189,6 +193,21 @@ const classroomQueries = {
   deleteClassroom: (id) => {
     return runQuery('DELETE FROM Classroom WHERE room_id = ?', [id]);
   },
+
+  assignLabToSubject: (course_code, room_id) => {
+    return db.run(`UPDATE Subject SET lab_room_id = ? WHERE course_code = ?`, [
+      room_id,
+      course_code,
+    ]);
+  },
+
+  assignClassroomToClass: (semester, branch, section, room_id) => {
+    return db.run(
+      `UPDATE Class SET default_room_id = ? WHERE semester = ? AND branch = ? AND section = ?`,
+      [room_id, semester, branch, section]
+    );
+  },
+  
 };
 
 const classQueries = {

@@ -80,7 +80,9 @@ function createTables() {
       practical_hr INTEGER,
       credits INTEGER,
       course_coordinator TEXT,
-      display_code TEXT
+      display_code TEXT,
+      lab_room_id TEXT,
+      FOREIGN KEY (lab_room_id) REFERENCES Classroom(room_id)
     )
   `,
     (err) => {
