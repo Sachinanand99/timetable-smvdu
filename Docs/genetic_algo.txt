@@ -9,8 +9,8 @@ CONSTANTS:
   periods               ← [1..7]   // 7 periods per day
   lunchBreakPeriod      ← 4
   maxLecturesPerWeek    ← 3
-  populationSize        ← 100
-  maxGenerations        ← 500
+  populationSize        ← 50
+  maxGenerations        ← 200
   mutationRate          ← 0.1
   elitismCount          ← 5
 
@@ -58,14 +58,44 @@ FUNCTION generateRandomTimetable():
       IF subj.practical_hr > 0:
         hoursToAllocate ← 2   // labs are 2 continuous hours
         assignedRoom ← classSectionRooms[classKey].labs[subj.course_code]
-        TRY allocateLabPair(timetable, assignment, subj, assignedRoom)
+        CALL allocateLabPair(timetable, assignment, subj, assignedRoom)
       ELSE:
         hoursToAllocate ← min(maxLecturesPerWeek - subjectLectureCountTracker[subjectKey],
                               subj.lecture_hr + subj.theory_hr)
         assignedRoom ← classSectionRooms[classKey].lecture
-        TRY allocateLectures(timetable, assignment, subj, assignedRoom, hoursToAllocate)
+        CALL allocateLectures(timetable, assignment, subj, assignedRoom, hoursToAllocate)
 
   RETURN timetable
+
+----------------------------------------------------
+FUNCTION allocateLabPair(timetable, assignment, subj, assignedRoom):
+  attempts ← 0
+  WHILE attempts < days.length * (periods.length - 1):
+    day ← pickRandomDay()
+    startPeriod ← pickValidStartPeriod()   // not lunch, not last period
+    endPeriod ← startPeriod + 1
+
+    IF both periods free (no teacher/room/class conflict) AND subject not already on day:
+      timetable.ADD(entry for startPeriod, lab_session=1)
+      timetable.ADD(entry for endPeriod, lab_session=2)
+      labAllocations[subjectKey] ← true
+      BREAK
+    ELSE:
+      attempts++
+
+----------------------------------------------------
+FUNCTION allocateLectures(timetable, assignment, subj, assignedRoom, hoursToAllocate):
+  FOR h = 1 TO hoursToAllocate:
+    attempts ← 0
+    WHILE attempts < days.length * periods.length:
+      day ← pickRandomDay()
+      period ← pickValidPeriod()   // not lunch
+      IF slot free (no teacher/room/class conflict) AND subject not already on day:
+        timetable.ADD(entry for this lecture)
+        subjectLectureCountTracker[subjectKey]++
+        BREAK
+      ELSE:
+        attempts++
 
 ----------------------------------------------------
 FUNCTION evaluateFitness(timetable):
